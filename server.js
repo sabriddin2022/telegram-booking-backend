@@ -1,30 +1,29 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-
+const express = require('express');
+const cors = require('cors');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Telegram Booking Backend is running 🚀");
+let bookings = [];
+
+// Создание записи
+app.post('/book', (req, res) => {
+  const { telegramId, name, phone, service, date, time, note } = req.body;
+  if (!telegramId) return res.json({ success: false, message: 'Нет Telegram ID' });
+
+  // Проверка, записан ли пользователь
+  const exists = bookings.find(b => b.telegramId === telegramId);
+  if (exists) return res.json({ success: false, message: 'Вы уже записались' });
+
+  bookings.push({ telegramId, name, phone, service, date, time, note });
+  res.json({ success: true });
 });
 
-app.post("/book", (req, res) => {
-  const { name, date } = req.body;
-
-  if (!name || !date) {
-    return res.status(400).json({ error: "name and date are required" });
-  }
-
-  res.json({
-    success: true,
-    message: `Бронирование создано для ${name} на ${date}`,
-  });
+// Получение всех записей для администратора
+app.get('/admin/bookings', (req, res) => {
+  if (req.query.key !== 'SECRET_KEY') return res.status(403).send('Доступ запрещен');
+  res.json(bookings);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-});
+app.listen(3000, () => console.log('Booking Backend running 🚀'));
